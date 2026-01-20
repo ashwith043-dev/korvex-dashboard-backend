@@ -6,22 +6,22 @@ from fastapi import FastAPI, Request, HTTPException, Header
 from fastapi.responses import RedirectResponse
 from jose import jwt
 
-# ================== CONFIG ==================
+# ================= CONFIG =================
 
 DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET")
 DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI")
 
-JWT_SECRET = os.getenv("JWT_SECRET")
+JWT_SECRET = os.getenv("JWT_SECRET", "CHANGE_ME_NOW")
 JWT_ALGORITHM = "HS256"
 
 DISCORD_API_BASE = "https://discord.com/api"
 
-# ================== APP ==================
+# ================= APP =================
 
 app = FastAPI(title="Korvex Dashboard API")
 
-# ================== HELPERS ==================
+# ================= HELPERS =================
 
 def create_jwt(user_id: int):
     payload = {
@@ -35,10 +35,10 @@ def verify_jwt(token: str):
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return payload["user_id"]
-    except:
+    except Exception:
         return None
 
-# ================== ROUTES ==================
+# ================= ROUTES =================
 
 @app.get("/")
 async def root():
@@ -47,6 +47,7 @@ async def root():
         "service": "korvex-dashboard-backend"
     }
 
+# ---------- Discord OAuth ----------
 
 @app.get("/auth/discord")
 async def discord_login():
@@ -96,6 +97,7 @@ async def discord_callback(code: str):
         "user": user
     }
 
+# ---------- Protected Route ----------
 
 @app.get("/me")
 async def get_me(authorization: str = Header(None)):
@@ -104,6 +106,17 @@ async def get_me(authorization: str = Header(None)):
 
     token = authorization.replace("Bearer ", "")
     user_id = verify_jwt(token)
+
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    return {"user_id": user_id}
+
+# ---------- Health ----------
+
+@app.get("/health")
+async def health():
+    return {"ok": True}    user_id = verify_jwt(token)
 
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token")
