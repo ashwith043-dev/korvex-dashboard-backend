@@ -99,19 +99,22 @@ async def discord_callback(code: str):
 
 # ---------- Protected Route ----------
 
-@app.get("/me")
-async def get_me(authorization: str = Header(None)):
+@app.get("/guilds")
+async def get_guilds(authorization: str = Header(None)):
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing token")
 
     token = authorization.replace("Bearer ", "")
-    user_id = verify_jwt(token)
 
-    if not user_id:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return {
+            "user_id": payload["user_id"],
+            "message": "Authorized"
+        }
+    except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
-
-    return {"user_id": user_id}
-
+       
 # ---------- Health ----------
 
 @app.get("/health")
